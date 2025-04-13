@@ -1,0 +1,16 @@
+{
+  "name": "edit-distance-simulator",
+  "version": "1.0.0",
+  "description": "编辑距离模拟器 - 一个交互式的编辑距离算法可视化工具",
+  "main": "app.js",
+  "scripts": {
+    "start": "python -m http.server 8000",
+    "build": "echo 'No build step required'"
+  },
+  "dependencies": {
+    "@tensorflow/tfjs": "^4.15.0"
+  },
+  "keywords": ["edit-distance", "algorithm", "visualization", "education"],
+  "author": "",
+  "license": "MIT"
+}
