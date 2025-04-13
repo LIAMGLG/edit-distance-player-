@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>编辑距离模拟器</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.15.0/dist/tf.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #1890ff;
+            --primary-hover: #40a9ff;
+            --primary-light: #e6f7ff;
+            --border-color: #e8e8e8;
+            --text-color: #333;
+            --bg-color: #f0f2f5;
+            --shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--text-color);
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            font-weight: 600;
+        }
+
+        h3 {
+            color: var(--text-color);
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        .input-area {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .string-input {
+            background-color: white;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+        }
+
+        .string-input:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .draggable-char {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 16px;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 6px;
+            cursor: move;
+            margin: 4px;
+            user-select: none;
+            font-size: 16px;
+            transition: all 0.2s ease;
+            min-width: 20px;
+        }
+
+        .draggable-char:hover {
+            background-color: var(--primary-hover);
+            transform: scale(1.05);
+        }
+
+        .drop-zone {
+            min-height: 80px;
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            margin: 15px 0;
+            padding: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(255,255,255,0.5);
+            transition: all 0.3s ease;
+        }
+
+        .drop-zone.active {
+            border-color: var(--primary-color);
+            background-color: var(--primary-light);
+            transform: scale(1.02);
+        }
+
+        #dp-table-container {
+            margin-top: 30px;
+            overflow-x: auto;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .dp-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            background-color: white;
+        }
+
+        .dp-table th,
+        .dp-table td {
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            text-align: center;
+            font-size: 16px;
+            transition: all 0.2s ease;
+        }
+
+        .dp-table th {
+            background-color: var(--primary-light);
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        .dp-table td.active {
+            background-color: var(--primary-light);
+            transform: scale(1.05);
+            z-index: 1;
+        }
+
+        .dp-table td.highlight {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .reset-button {
+            display: block;
+            margin: 30px auto 0;
+            padding: 12px 24px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .reset-button:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            .draggable-char {
+                padding: 6px 12px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>编辑距离模拟器</h1>
+        <div class="input-area">
+            <div class="string-input">
+                <h3>源字符串</h3>
+                <div id="source-chars">
+                    <span class="draggable-char" draggable="true">a</span>
+                    <span class="draggable-char" draggable="true">b</span>
+                    <span class="draggable-char" draggable="true">c</span>
+                    <span class="draggable-char" draggable="true">d</span>
+                    <span class="draggable-char" draggable="true">e</span>
+                    <span class="draggable-char" draggable="true">f</span>
+                    <span class="draggable-char" draggable="true">g</span>
+                    <span class="draggable-char" draggable="true">h</span>
+                    <span class="draggable-char" draggable="true">i</span>
+                    <span class="draggable-char" draggable="true">j</span>
+                    <span class="draggable-char" draggable="true">k</span>
+                    <span class="draggable-char" draggable="true">l</span>
+                    <span class="draggable-char" draggable="true">m</span>
+                    <span class="draggable-char" draggable="true">n</span>
+                    <span class="draggable-char" draggable="true">o</span>
+                    <span class="draggable-char" draggable="true">p</span>
+                    <span class="draggable-char" draggable="true">q</span>
+                    <span class="draggable-char" draggable="true">r</span>
+                    <span class="draggable-char" draggable="true">s</span>
+                    <span class="draggable-char" draggable="true">t</span>
+                    <span class="draggable-char" draggable="true">u</span>
+                    <span class="draggable-char" draggable="true">v</span>
+                    <span class="draggable-char" draggable="true">w</span>
+                    <span class="draggable-char" draggable="true">x</span>
+                    <span class="draggable-char" draggable="true">y</span>
+                    <span class="draggable-char" draggable="true">z</span>
+                </div>
+                <div id="source-drop" class="drop-zone">拖放区域 1</div>
+            </div>
+            <div class="string-input">
+                <h3>目标字符串</h3>
+                <div id="target-chars">
+                    <span class="draggable-char" draggable="true">a</span>
+                    <span class="draggable-char" draggable="true">b</span>
+                    <span class="draggable-char" draggable="true">c</span>
+                    <span class="draggable-char" draggable="true">d</span>
+                    <span class="draggable-char" draggable="true">e</span>
+                    <span class="draggable-char" draggable="true">f</span>
+                    <span class="draggable-char" draggable="true">g</span>
+                    <span class="draggable-char" draggable="true">h</span>
+                    <span class="draggable-char" draggable="true">i</span>
+                    <span class="draggable-char" draggable="true">j</span>
+                    <span class="draggable-char" draggable="true">k</span>
+                    <span class="draggable-char" draggable="true">l</span>
+                    <span class="draggable-char" draggable="true">m</span>
+                    <span class="draggable-char" draggable="true">n</span>
+                    <span class="draggable-char" draggable="true">o</span>
+                    <span class="draggable-char" draggable="true">p</span>
+                    <span class="draggable-char" draggable="true">q</span>
+                    <span class="draggable-char" draggable="true">r</span>
+                    <span class="draggable-char" draggable="true">s</span>
+                    <span class="draggable-char" draggable="true">t</span>
+                    <span class="draggable-char" draggable="true">u</span>
+                    <span class="draggable-char" draggable="true">v</span>
+                    <span class="draggable-char" draggable="true">w</span>
+                    <span class="draggable-char" draggable="true">x</span>
+                    <span class="draggable-char" draggable="true">y</span>
+                    <span class="draggable-char" draggable="true">z</span>
+                </div>
+                <div id="target-drop" class="drop-zone">拖放区域 2</div>
+            </div>
+        </div>
+        <div id="dp-table-container">
+            <table class="dp-table" id="dp-table"></table>
+        </div>
+        <button id="reset-button" class="reset-button">重置</button>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
